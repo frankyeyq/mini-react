@@ -11,7 +11,7 @@ import App from './App.jsx'
 
 // 版本2: 虚拟dom
 // 虚拟dom其实就是用object来描述dom结构，然后用这个object来生成真实dom
-// 先用vdom来描述一下app节点，然后通过vdom生成真实dom
+// 先用vdom来描述一下app节点，然后通过vdom生成真实dom.
 const el = {
   type: 'div',
   children: [
