@@ -42,15 +42,20 @@ const commitRoot = () => {
 
 const commitWork = fiber => {
   if (!fiber) return
-  fiber.parent.dom.append(fiber.dom)
+  let fiberParent = fiber.parent
+  while (!fiberParent.dom) {
+    fiberParent = fiberParent.parent
+  }
+  fiber.dom && fiberParent.dom.append(fiber.dom)
   commitWork(fiber.child)
   commitWork(fiber.sibling)
 }
 
 const createDom = type => {
-  return type === 'TEXT_ELEMENT' 
-        ? document.createTextNode('') 
-        : document.createElement(type)
+  const res =  type === 'TEXT_ELEMENT' 
+  ? document.createTextNode('') 
+  : document.createElement(type)
+  return res
 }
 
 const updateProps = (dom, props) => {
@@ -61,8 +66,7 @@ const updateProps = (dom, props) => {
   })
 }
 
-const initChildren = (fiber) => {
-  const children = fiber.props.children
+const initChildren = (fiber, children) => {
   if (children && children.length) {
     let prevChild = null
     children.forEach((child, idx) => {
@@ -85,13 +89,16 @@ const initChildren = (fiber) => {
 }
 
 const performWorkOfUnit = fiber => {
-  if (!fiber.dom) {
-    const dom = (fiber.dom = createDom(fiber.type))
-    // fiber.parent.dom.append(dom)
-    updateProps(dom, fiber.props)
+  const isFunctionComponent = fiber.type instanceof Function
+  if (!isFunctionComponent) {
+    if (!fiber.dom) {
+      const dom = (fiber.dom = createDom(fiber.type))
+      // fiber.parent.dom.append(dom)
+      updateProps(dom, fiber.props)
+    }
   }
-
-  initChildren(fiber)
+  const children = isFunctionComponent ? [fiber.type()] : fiber.props.children
+  initChildren(fiber, children)
   
   if (fiber.child) {
     return fiber.child
