@@ -29,52 +29,60 @@ function workLoop(deadLine) {
   requestIdleCallback(workLoop)
 }
 
-let taskId = 0
-const performWorkOfUnit = work => {
-  //1. 创建dom
-  if (!work.dom) {
-    const dom = (work.dom = 
-      work.type === 'TEXT_ELEMENT' 
+const createDom = type => {
+  return type === 'TEXT_ELEMENT' 
         ? document.createTextNode('') 
-        : document.createElement(work.type))
-    work.parent.dom.append(dom)
+        : document.createElement(type)
+}
 
-    Object.keys(work.props).forEach(key => {
-      if (key !== 'children') {
-        dom[key] = work.props[key]
-      }
-    })
-  }
-  //2. 将dom结构转换成链表结构
-  const children = work.props.children
+const updateProps = (dom, props) => {
+  Object.keys(props).forEach(key => {
+    if (key !== 'children') {
+      dom[key] = props[key]
+    }
+  })
+}
+
+const initChildren = (fiber) => {
+  const children = fiber.props.children
   if (children && children.length) {
     let prevChild = null
     children.forEach((child, idx) => {
-      const newWork = {
+      const newFiber = {
         type: child.type,
         props: child.props,
         dom: null,
         child: null,
         sibling: null,
-        parent: work
+        parent: fiber
       }
       if (idx === 0) {
-        work.child = newWork
+        work.child = newFiber
       } else {
-        prevChild.sibling = newWork
+        prevChild.sibling = newFiber
       }
-      prevChild = newWork
+      prevChild = newFiber
     })
+  }
+}
 
-    if (work.child) {
-      return work.child
-    }
-    if (work.sibling) {
-      return work.sibling
-    }
-    if (work.parent) {
-      return work.parent.sibling
-    }
+const performWorkOfUnit = fiber => {
+  if (!fiber.dom) {
+    const dom = (fiber.dom = createDom(fiber.type))
+    fiber.parent.dom.append(dom)
+    updateProps(dom, fiber.props)
+  }
+
+  initChildren(fiber)
+  
+  if (fiber.child) {
+    return fiber.child
+  }
+  if (fiber.sibling) {
+    return fiber.sibling
+  }
+  if (fiber.parent) {
+    return fiber.parent.sibling
   }
 }
 
