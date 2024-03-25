@@ -19,6 +19,7 @@ const createElement = (type, props, ...children) => {
 }
 
 let nextWorkUnit = null
+let root = null
 
 function workLoop(deadLine) {
   let shouldYield = false
@@ -26,7 +27,24 @@ function workLoop(deadLine) {
     nextWorkUnit = performWorkOfUnit(nextWorkUnit)
     shouldYield = !deadLine.timeRemaining() < 1
   }
+
+  if (!nextWorkUnit && root) {
+    commitRoot()
+  }
+
   requestIdleCallback(workLoop)
+}
+
+const commitRoot = () => {
+  commitWork(root.child)
+  root = null
+}
+
+const commitWork = fiber => {
+  if (!fiber) return
+  fiber.parent.dom.append(fiber.dom)
+  commitWork(fiber.child)
+  commitWork(fiber.sibling)
 }
 
 const createDom = type => {
@@ -57,7 +75,7 @@ const initChildren = (fiber) => {
         parent: fiber
       }
       if (idx === 0) {
-        work.child = newFiber
+        fiber.child = newFiber
       } else {
         prevChild.sibling = newFiber
       }
@@ -69,7 +87,7 @@ const initChildren = (fiber) => {
 const performWorkOfUnit = fiber => {
   if (!fiber.dom) {
     const dom = (fiber.dom = createDom(fiber.type))
-    fiber.parent.dom.append(dom)
+    // fiber.parent.dom.append(dom)
     updateProps(dom, fiber.props)
   }
 
@@ -86,8 +104,10 @@ const performWorkOfUnit = fiber => {
   }
 }
 
+
+
 const render = (el, container) => {
-  nextWorkUnit = {
+  nextWorkUnit = root = {
     dom: container,
     props: {
       children: [el]
