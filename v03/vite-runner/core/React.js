@@ -88,17 +88,28 @@ const initChildren = (fiber, children) => {
   }
 }
 
+function updateFunctionComponent(fiber) {
+  const children = [fiber.type(fiber.props)]
+  initChildren(fiber, children)
+}
+
+function updateHostComponent(fiber) {
+  if (!fiber.dom) {
+    const dom = (fiber.dom = createDom(fiber.type))
+    // fiber.parent.dom.append(dom)
+    updateProps(dom, fiber.props)
+  }
+  const children = fiber.props.children
+  initChildren(fiber, children)
+}
+
 const performWorkOfUnit = fiber => {
   const isFunctionComponent = fiber.type instanceof Function
-  if (!isFunctionComponent) {
-    if (!fiber.dom) {
-      const dom = (fiber.dom = createDom(fiber.type))
-      // fiber.parent.dom.append(dom)
-      updateProps(dom, fiber.props)
-    }
+  if (isFunctionComponent) {
+    updateFunctionComponent(fiber)
+  } else {
+    updateHostComponent(fiber)
   }
-  const children = isFunctionComponent ? [fiber.type()] : fiber.props.children
-  initChildren(fiber, children)
   
   if (fiber.child) {
     return fiber.child
@@ -106,9 +117,12 @@ const performWorkOfUnit = fiber => {
   if (fiber.sibling) {
     return fiber.sibling
   }
-  if (fiber.parent) {
-    return fiber.parent.sibling
+  let nextFiber = fiber.parent
+  while (!nextFiber.sibling && nextFiber.parent) {
+    nextFiber = nextFiber.parent
   }
+  return nextFiber.sibling
+
 }
 
 

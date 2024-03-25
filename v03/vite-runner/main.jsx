@@ -15,4 +15,4 @@ import App from './App.jsx'
 // 先用vdom来描述一下app节点，然后通过vdom生成真实dom.
 
 const root = document.querySelector('#root')
-ReactDom.createRoot(root).render(App)
+ReactDom.createRoot(root).render(<App />)
